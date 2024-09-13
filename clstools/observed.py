@@ -8,12 +8,14 @@ from .test_statistic import calculate_pnllr
 
 def get_observed_limit(
     mu_values: Sequence[float],
-    minimize_nll: Callable,
-    generate_toys: Callable,
+    fitter: Callable,
+    generator: Callable,
     xdata: Any,
     ydata: Any,
-    args: tuple[Any, ...] = (),
-    kwargs: Optional[dict[str, Any]] = None,
+    fitter_args: tuple[Any, ...] = (),
+    fitter_kwargs: Optional[dict[str, Any]] = None,
+    generator_args: tuple[Any, ...] = (),
+    generator_kwargs: Optional[dict[str, Any]] = None,
     num_toys: int = 200,
     confidence_level: float = 0.95,
     output_path: Optional[str] = None
@@ -46,8 +48,8 @@ def get_observed_limit(
     Returns:
         Observed limit on the signal strength at the given confidence level.
     """
-    popt_null, _ = minimize_nll(xdata, ydata, 0., *args, **kwargs)
-    toys_null = generate_toys(xdata, popt_null, num_toys, *args, **kwargs)
+    popt_null, _ = fitter(xdata, ydata, 0., *fitter_args, **fitter_kwargs)
+    toys_null = generator(xdata, popt_null, num_toys, *generator_args, **generator_kwargs)
 
     nll_glob_obs = None
     nll_glob_toys = [None] * num_toys
@@ -61,27 +63,27 @@ def get_observed_limit(
     test_mus_arr = []
 
     for mu_value in sorted(mu_values):
-        test_obs, popt_mu, best_fit = calculate_pnllr(minimize_nll, xdata, ydata, mu_value,
-                                                      args=args, kwargs=kwargs,
+        test_obs, popt_mu, best_fit = calculate_pnllr(fitter, xdata, ydata, mu_value,
+                                                      args=fitter_args, kwargs=fitter_kwargs,
                                                       nll_glob=nll_glob_obs)
         if nll_glob_obs is None and best_fit[0] < mu_value * 0.999:
             nll_glob_obs = best_fit[1]
 
         test_nulls = np.empty(num_toys)
         for itoy, toy in enumerate(toys_null):
-            test, _, best_fit = calculate_pnllr(minimize_nll, xdata, toy, mu_value,
-                                                args=args, kwargs=kwargs,
+            test, _, best_fit = calculate_pnllr(fitter, xdata, toy, mu_value,
+                                                args=fitter_args, kwargs=fitter_kwargs,
                                                 nll_glob=nll_glob_toys[itoy])
             test_nulls[itoy] = test
             if nll_glob_toys[itoy] is None and best_fit[0] < mu_value * 0.999:
                 nll_glob_toys[itoy] = best_fit[1]
 
-        toys_mu = generate_toys(xdata, popt_mu, num_toys, *args, **kwargs)
+        toys_mu = generator(xdata, popt_mu, num_toys, *generator_args, **generator_kwargs)
 
         test_mus = np.empty(num_toys)
         for itoy, toy in enumerate(toys_mu):
-            test_mus[itoy] = calculate_pnllr(minimize_nll, xdata, toy, mu_value,
-                                             args=args, kwargs=kwargs)[0]
+            test_mus[itoy] = calculate_pnllr(fitter, xdata, toy, mu_value,
+                                             args=fitter_args, kwargs=fitter_kwargs)[0]
 
         if output_path:
             test_obs_arr.append(test_obs)
