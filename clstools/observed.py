@@ -37,6 +37,9 @@ def get_observed_limit(
 
                 ``generate_toys(xdata, params, num_toys, *args, **kwargs) -> list of ydata``
 
+            where ``params`` is a tuple of model parameters with the signal strength as the last
+            entry.
+
         xdata: Independent variable of the model.
         ydata: Observed data.
         args: Additional positional arguments to be passed to the model functions.
@@ -49,7 +52,7 @@ def get_observed_limit(
         Observed limit on the signal strength at the given confidence level.
     """
     popt_null, _ = fitter(xdata, ydata, 0., *fitter_args, **fitter_kwargs)
-    toys_null = generator(xdata, popt_null, num_toys, *generator_args, **generator_kwargs)
+    toys_null = generator(xdata, popt_null + (0.,), num_toys, *generator_args, **generator_kwargs)
 
     nll_glob_obs = None
     nll_glob_toys = [None] * num_toys
@@ -78,7 +81,8 @@ def get_observed_limit(
             if nll_glob_toys[itoy] is None and best_fit[0] < mu_value * 0.999:
                 nll_glob_toys[itoy] = best_fit[1]
 
-        toys_mu = generator(xdata, popt_mu, num_toys, *generator_args, **generator_kwargs)
+        toys_mu = generator(xdata, popt_mu + (mu_value,), num_toys, *generator_args,
+                            **generator_kwargs)
 
         test_mus = np.empty(num_toys)
         for itoy, toy in enumerate(toys_mu):
