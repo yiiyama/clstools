@@ -51,6 +51,8 @@ def get_observed_limit(
     Returns:
         Observed limit on the signal strength at the given confidence level.
     """
+    fitter_kwargs = fitter_kwargs or {}
+    generator_kwargs = generator_kwargs or {}
     popt_null, _ = fitter(xdata, ydata, 0., *fitter_args, **fitter_kwargs)
     toys_null = generator(xdata, popt_null + (0.,), num_toys, *generator_args, **generator_kwargs)
 

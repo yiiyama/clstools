@@ -35,6 +35,7 @@ def calculate_pnllr(
         - The best-fit parameters for the given mu
         - Best-fit signal strength (muhat) and NLL value with constraint 0 <= muhat <= mu
     """
+    kwargs = kwargs or {}
     popt_cond, nll_cond = minimize_nll(xdata, ydata, mu, *args, **kwargs)
     if nll_glob is None:
         popt_glob, nll_glob = minimize_nll(xdata, ydata, (0., mu), *args, **kwargs)
